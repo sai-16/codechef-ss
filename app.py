@@ -12,7 +12,7 @@ st.set_page_config(
     layout="centered"
 )
 
-st.title("📊 CodeChef Contest Report Generator")
+st.title("CodeChef Sincerity Score")
 
 # --------------------------------------
 # Paths

@@ -24,13 +24,6 @@ ALL_STUDENTS_FILE = os.path.join(DATA_DIR, "All Student Details.xlsx")
 DEFAULT_FEEDBACK_FILE = os.path.join(DATA_DIR, "RollNo_Reason.xlsx")
 
 # --------------------------------------
-# Reload Button (IMPORTANT)
-# --------------------------------------
-if st.button(" Reload App & Data"):
-    st.cache_data.clear()
-    st.experimental_rerun()
-
-# --------------------------------------
 # Batch Dropdown
 # --------------------------------------
 BATCHES = [
@@ -73,6 +66,7 @@ if has_feedback == "Yes":
     )
     if feedback_file:
         feedback_df = pd.read_excel(feedback_file, engine="openpyxl")
+
 else:
     st.info("Using default feedback file from repository")
     if os.path.exists(DEFAULT_FEEDBACK_FILE):
@@ -89,8 +83,6 @@ if st.button("⚙️ Generate Report"):
     else:
         try:
             with st.spinner("Processing data..."):
-
-                # Always read latest student file here
                 if not os.path.exists(ALL_STUDENTS_FILE):
                     st.error("All Student Details file not found")
                     st.stop()
@@ -108,7 +100,7 @@ if st.button("⚙️ Generate Report"):
                 )
 
                 output = io.BytesIO()
-                final_df.to_excel(output, engine="openpyxl", index=False)
+                final_df.to_excel(output, engine="openpyxl")
                 output.seek(0)
 
                 st.success("Report generated successfully")

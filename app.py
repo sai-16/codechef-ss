@@ -2,7 +2,6 @@ import streamlit as st
 import pandas as pd
 import io
 import os
-import time
 from utils.processor import generate_report
 
 # --------------------------------------
@@ -25,34 +24,11 @@ ALL_STUDENTS_FILE = os.path.join(DATA_DIR, "All Student Details.xlsx")
 DEFAULT_FEEDBACK_FILE = os.path.join(DATA_DIR, "RollNo_Reason.xlsx")
 
 # --------------------------------------
-# HARD RESET BUTTON (REAL FIX)
+# Reload Button (IMPORTANT)
 # --------------------------------------
-if st.button(" HARD RESET APP"):
+if st.button(" Reload App & Data"):
     st.cache_data.clear()
-    time.sleep(1)
     st.experimental_rerun()
-
-# --------------------------------------
-# DEBUG SECTION (DO NOT REMOVE)
-# --------------------------------------
-st.subheader(" Debug Info")
-
-if os.path.exists(ALL_STUDENTS_FILE):
-    debug_df = pd.read_excel(ALL_STUDENTS_FILE, engine="openpyxl")
-    st.write(" Rows in repo student file:", debug_df.shape[0])
-    st.write("Last modified:", time.ctime(os.path.getmtime(ALL_STUDENTS_FILE)))
-    st.write(" File path:", ALL_STUDENTS_FILE)
-else:
-    st.error(" All Student Details file NOT FOUND in repo")
-
-# --------------------------------------
-# OPTIONAL FILE UPLOAD (BEST PRACTICE)
-# --------------------------------------
-st.subheader(" Upload Latest Student File (Recommended)")
-uploaded_student_file = st.file_uploader(
-    "Upload All Student Details.xlsx",
-    type=["xlsx"]
-)
 
 # --------------------------------------
 # Batch Dropdown
@@ -71,7 +47,6 @@ BATCHES = [
     "CMRCET-Y23-P3",
     "KLH-Y23-B7-WEB-DEV",
     "ACE-Y23-P1-B2",
-    "KLH-Y23-P1-B2",
     "KLH-Y23-B5-P2-FDN",
     "KLH-Y23-B4-P2-FDN",
     "KLH-Y23-B3-P2-FDN",
@@ -98,11 +73,10 @@ if has_feedback == "Yes":
     )
     if feedback_file:
         feedback_df = pd.read_excel(feedback_file, engine="openpyxl")
-
 else:
+    st.info("Using default feedback file from repository")
     if os.path.exists(DEFAULT_FEEDBACK_FILE):
         feedback_df = pd.read_excel(DEFAULT_FEEDBACK_FILE, engine="openpyxl")
-        st.info("Using default feedback file from repo")
     else:
         st.error("Default feedback file not found")
 
@@ -110,48 +84,45 @@ else:
 # Generate Button
 # --------------------------------------
 if st.button("⚙️ Generate Report"):
-
     if has_feedback == "Yes" and feedback_df is None:
         st.error("Please upload feedback file")
-        st.stop()
+    else:
+        try:
+            with st.spinner("Processing data..."):
 
-    try:
-        with st.spinner("Processing data..."):
-
-            # 🔴 PRIORITY: Uploaded file > Repo file
-            if uploaded_student_file:
-                data_df = pd.read_excel(uploaded_student_file, engine="openpyxl")
-                st.success(f"Using uploaded student file ({data_df.shape[0]} rows)")
-            else:
+                # Always read latest student file here
                 if not os.path.exists(ALL_STUDENTS_FILE):
-                    st.error("All Student Details file not found in repo")
+                    st.error("All Student Details file not found")
                     st.stop()
-                data_df = pd.read_excel(ALL_STUDENTS_FILE, engine="openpyxl")
-                st.warning(f"Using repo student file ({data_df.shape[0]} rows)")
 
-            final_df = generate_report(
-                data=data_df,
-                feedback=feedback_df,
-                batch=batch,
-                hasfb=(has_feedback == "Yes")
-            )
+                data_df = pd.read_excel(
+                    ALL_STUDENTS_FILE,
+                    engine="openpyxl"
+                )
 
-            output = io.BytesIO()
-            final_df.to_excel(output, index=False, engine="openpyxl")
-            output.seek(0)
+                final_df = generate_report(
+                    data=data_df,
+                    feedback=feedback_df,
+                    batch=batch,
+                    hasfb=(has_feedback == "Yes")
+                )
 
-            st.success("✅ Report generated successfully")
+                output = io.BytesIO()
+                final_df.to_excel(output, engine="openpyxl", index=False)
+                output.seek(0)
 
-            st.download_button(
-                label="⬇️ Download Excel Report",
-                data=output,
-                file_name=f"{batch}_CodeChef_Report.xlsx",
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-            )
+                st.success("Report generated successfully")
 
-            st.subheader("🔍 Preview (First 10 rows)")
-            st.dataframe(final_df.head(10), use_container_width=True)
+                st.download_button(
+                    label="⬇️ Download Excel Report",
+                    data=output,
+                    file_name=f"{batch}_CodeChef_Report.xlsx",
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                )
 
-    except Exception as e:
-        st.error("❌ An error occurred while processing")
-        st.exception(e)
+                st.subheader("🔍 Preview (First 10 rows)")
+                st.dataframe(final_df.head(10), use_container_width=True)
+
+        except Exception as e:
+            st.error("An error occurred while processing")
+            st.exception(e)

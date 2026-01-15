@@ -58,7 +58,7 @@ def generate_report(data, feedback, batch, hasfb):
     df = data[['Roll Number', 'Score','Feedback']]
     # df.rename(columns={'Email': 'email'}, inplace=True)
     df.rename(columns={'Roll Number': 'RollNumber'}, inplace=True)
-    df.set_index("RollNumber", inplace=True)
     df['RollNumber'] = df['RollNumber'].str.upper()
+    f.set_index("RollNumber", inplace=True)
     return df
     
